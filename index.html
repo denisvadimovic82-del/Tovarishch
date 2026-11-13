@@ -298,17 +298,20 @@
 const LANG = "ru-RU";
 
 // === РАДИОСТАНЦИИ ===
-// HTTP-потоки (Радио России, Маяк) работают только при открытии файла локально (file://)
+// Только HTTPS-потоки (работают на GitHub Pages)
+// HTTP-потоки (старый Маяк, старый Радио России) заменены или убраны
 const RADIO_STATIONS = {
+  // Советские
   'радио ссср':        { name: 'Радио СССР',       url: 'https://listen3.myradio24.com/ussr' },
   'ссср 30-50':        { name: 'СССР 30-50',       url: 'https://pub0202.101.ru:8443/stream/pro/aac/64/46' },
   'ссср 50-70':        { name: 'СССР 50-70',       url: 'https://srv12.gpmradio.ru:8443/stream/pro/aac/64/47' },
   'советская эстрада': { name: 'Советская эстрада', url: 'https://evcast.mediacp.eu:2075/stream' },
-  'радио россии':      { name: 'Радио России',     url: 'http://icecast.vgtrk.cdnvideo.ru/rrzonam_aac_64kbps' },
-  'маяк':              { name: 'Радио Маяк',       url: 'http://icecast.vgtrk.cdnvideo.ru/mayakfm_mp3_192kbps' },
+  'маяк':              { name: 'Радио Маяк',       url: 'https://icecast-vgtrk.cdnvideo.ru/mayakfm_aac_64kbps' },
+  // Ретро FM
   'ретро фм':          { name: 'Ретро FM',         url: 'https://retro.hostingradio.ru:8043/retro256.mp3' },
   'ретро 80':          { name: 'Ретро FM 80-х',    url: 'https://retro80.hostingradio.ru:8025/retro80-128.mp3' },
   'ретро 70':          { name: 'Ретро FM 70-х',    url: 'https://retro70.hostingradio.ru:8025/retro70-128.mp3' },
+  // Современные
   'dfm':               { name: 'DFM',              url: 'https://dfm.hostingradio.ru/dfm128.mp3' },
   'europa plus':       { name: 'Europa Plus',      url: 'https://ep128.hostingradio.ru:8030/ep128' },
   'record':            { name: 'Radio Record',     url: 'https://radiorecord.hostingradio.ru/rr_main96.aacp' },
@@ -637,7 +640,7 @@ function playRadio(key) {
   if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
   audioWrap.style.display = 'block';
   audioPlayer.src = st.url;
-  audioPlayer.play().catch(() => addLog('⚠️ Поток недоступен (HTTP на HTTPS-странице)', 'sys'));
+  audioPlayer.play().catch(() => addLog('⚠️ Поток недоступен', 'sys'));
   trackTitle.textContent = '📻 ' + st.name;
   nowPlayingEl.textContent = st.name; nowPlayingEl.classList.add('show');
   isPlayingMusic = true; reactor.classList.add('playing'); setStatus('♪ радио ♪','playing');
