@@ -288,6 +288,8 @@
     <p><span class="cmd">«Сводка»</span> · <span class="cmd">«Тревога»</span> · <span class="cmd">«Отбой»</span></p>
     <p><span class="cmd">«Плакат»</span> · <span class="cmd">«Доска почёта»</span> · <span class="cmd">«Партбилет»</span></p>
     <p><span class="cmd">«Мудрость»</span> · <span class="cmd">«Проверка связи»</span> · <span class="cmd">«Тишина»</span></p>
+    <h3>🤖 ИИ</h3>
+    <p>Любой другой вопрос — Товарищ попробует ответить через ИИ.</p>
     <h3>⚙️ Управление</h3>
     <p><span class="cmd">«Помощь»</span> · <span class="cmd">«Стоп»</span></p>
     <button class="modal-close" id="closeHelp">Понятно</button>
@@ -299,18 +301,15 @@ const LANG = "ru-RU";
 
 // === РАДИОСТАНЦИИ ===
 const RADIO_STATIONS = {
-  // Советские
   'радио ссср':        { name: 'Радио СССР',       url: 'https://listen3.myradio24.com/ussr' },
   'ссср 30-50':        { name: 'СССР 30-50',       url: 'https://pub0202.101.ru:8443/stream/pro/aac/64/46' },
   'ссср 50-70':        { name: 'СССР 50-70',       url: 'https://srv12.gpmradio.ru:8443/stream/pro/aac/64/47' },
   'советская эстрада': { name: 'Советская эстрада', url: 'https://evcast.mediacp.eu:2075/stream' },
   'маяк':              { name: 'Радио Маяк',       url: 'https://icecast-vgtrk.cdnvideo.ru/mayakfm_aac_64kbps' },
   'вести фм':          { name: 'Вести ФМ',         url: 'https://icecast-vgtrk.cdnvideo.ru/vestifm_mp3_128kbps' },
-  // Ретро FM
   'ретро фм':          { name: 'Ретро FM',         url: 'https://retro.hostingradio.ru:8043/retro256.mp3' },
   'ретро 80':          { name: 'Ретро FM 80-х',    url: 'https://retro80.hostingradio.ru:8025/retro80-128.mp3' },
   'ретро 70':          { name: 'Ретро FM 70-х',    url: 'https://retro70.hostingradio.ru:8025/retro70-128.mp3' },
-  // Современные
   'dfm':               { name: 'DFM',              url: 'https://dfm.hostingradio.ru/dfm128.mp3' },
   'europa plus':       { name: 'Europa Plus',      url: 'https://ep128.hostingradio.ru:8030/ep128' },
   'record':            { name: 'Radio Record',     url: 'https://radiorecord.hostingradio.ru/rr_main96.aacp' },
@@ -319,6 +318,60 @@ const RADIO_STATIONS = {
   'родные песни':      { name: 'Родные Песни',     url: 'https://rodpesni.amgradio.ru/rp' },
   'somafm':            { name: 'SomaFM Groove',    url: 'https://ice5.somafm.com/groovesalad-128-mp3' }
 };
+
+// === ИИ (POLLINATIONS) ===
+// Бесплатный эндпоинт без ключа. Лимит: ~1 запрос в 3-15 секунд с IP.
+const AI_ENDPOINT = 'https://text.pollinations.ai/openai';
+let aiHistory = [
+  { role: 'system', content: 'Ты — Товарищ, советский голосовой ассистент. Отвечай кратко (1-2 предложения), с лёгким советским колоритом, обращайся «товарищ». Не используй Markdown, только чистый текст для озвучки.' }
+];
+
+async function askAI(text) {
+  // Проверка на занятость (защита от спама запросами)
+  if (window._aiBusy) {
+    addLog('Товарищ уже думает...', 'sys');
+    return;
+  }
+  window._aiBusy = true;
+  setStatus('думаю...', 'speaking');
+  addLog('🤖 Запрос к ИИ: ' + text, 'sys');
+
+  try {
+    // Добавляем сообщение пользователя в историю
+    aiHistory.push({ role: 'user', content: text });
+    // Ограничиваем историю последними 6 сообщениями (чтобы не раздувать токены)
+    if (aiHistory.length > 7) aiHistory = [aiHistory[0], ...aiHistory.slice(-6)];
+
+    const res = await fetch(AI_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai', // Базовая бесплатная модель
+        messages: aiHistory,
+        max_tokens: 150,
+        temperature: 0.7
+      })
+    });
+
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content;
+
+    if (reply) {
+      aiHistory.push({ role: 'assistant', content: reply });
+      speak(reply);
+      addLog('🤖 ИИ: ' + reply, 'sys');
+    } else {
+      throw new Error('Пустой ответ');
+    }
+  } catch (e) {
+    addLog('⚠️ Ошибка ИИ: ' + e.message, 'sys');
+    speak('Связь с центром потеряна, товарищ. Попробуйте позже.');
+  } finally {
+    window._aiBusy = false;
+    setStatus(isPlayingMusic ? '♪ музыка ♪' : 'ожидание', isPlayingMusic ? 'playing' : '');
+  }
+}
 
 const $ = id => document.getElementById(id);
 const reactor = $('reactor'), statusEl = $('status'), logEl = $('log'), micBtn = $('micBtn'), clockEl = $('clock');
@@ -697,7 +750,7 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
     else if (a === 'radio') { musicPanel.classList.add('open'); speak('Музыкальный отдел.'); }
     else if (a === 'rutube') { musicPanel.classList.add('open'); rutubeSearchInput.focus(); speak('Раздел RUTUBE.'); }
     else if (a === 'notes') { renderNotes(); notesModal.classList.add('open'); speak('Заметки открыты.'); }
-    else if (a === 'games') { speak('Угадай число, монетка или пошути.'); }
+    else if (a === 'games') { speak('Угадай число, монетка или пошути. Или спроси что-нибудь — я подумаю.'); }
     else if (a === 'report') { giveReport(); }
   };
 });
@@ -921,7 +974,12 @@ function handleCommand(text) {
   if (/(стоп|остановись|хватит|замолчи)/.test(t)) { synth.cancel(); stopListening(); return; }
   if (/(привет|здравствуй|хай|доброе утро|добрый день|добрый вечер)/.test(t)) { speak('Здравствуйте, товарищ.'); return; }
 
-  speak('Не понял, товарищ. Повторите или скажите «помощь».');
+  // Если ничего не распознали — спрашиваем ИИ
+  if (navigator.onLine) {
+    askAI(t);
+  } else {
+    speak('Не понял, товарищ. И связи с центром нет.');
+  }
 }
 
 audioPlayer.addEventListener('play', () => { if (!isRutubeMode) { isPlayingMusic=true; reactor.classList.add('playing'); setStatus('♪ музыка ♪','playing'); } });
