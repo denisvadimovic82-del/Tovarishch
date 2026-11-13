@@ -41,42 +41,21 @@
   .star-svg { width: 100%; height: 100%; filter: drop-shadow(0 0 15px var(--red-glow)); }
   .star-svg polygon { fill: none; stroke: var(--red); stroke-width: 1.5; opacity: .6; }
 
-  /* === ЗВЕЗДА: ЦЕНТР + КОНТУРЫ === */
   .core-star { position: relative; width: 32%; height: 32%; z-index: 2; }
-
-  .core-star .star-ring {
-    position: absolute;
-    inset: 0;
-    width: 100%; height: 100%;
-  }
-  .core-star .star-ring polygon {
-    fill: none;
-    stroke: var(--red);
-    stroke-width: 1.5;
-    opacity: 0.7;
-  }
+  .core-star .star-ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .core-star .star-ring polygon { fill: none; stroke: var(--red); stroke-width: 1.5; opacity: 0.7; }
   .core-star .ring1 { transform: scale(1.8); opacity: 0.15; }
   .core-star .ring2 { transform: scale(1.5); opacity: 0.3; }
   .core-star .ring3 { transform: scale(1.25); opacity: 0.5; }
   .core-star .ring4 { transform: scale(1.0); opacity: 0.8; }
-
-  .core-star .star-core {
-    position: absolute;
-    inset: 0;
-    width: 100%; height: 100%;
-    filter: drop-shadow(0 0 25px var(--red));
-    animation: corePulse 2.4s ease-in-out infinite;
-  }
+  .core-star .star-core { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 25px var(--red)); animation: corePulse 2.4s ease-in-out infinite; }
   .core-star .star-core polygon { fill: var(--red); }
-
   @keyframes corePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
   @keyframes corePulseRed { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
   @keyframes corePulseMusic { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
-
   .star-reactor.listening .core-star .star-core polygon { fill: var(--danger); }
   .star-reactor.listening .core-star .star-core { animation: corePulseRed 0.7s ease-in-out infinite; }
   .star-reactor.listening .core-star .star-ring polygon { stroke: var(--danger); }
-
   .star-reactor.speaking .core-star .star-core polygon,
   .star-reactor.playing .core-star .star-core polygon { fill: var(--gold); }
   .star-reactor.speaking .core-star .star-ring polygon,
@@ -94,24 +73,7 @@
   .volume-seg.on { background: var(--red); box-shadow: 0 0 6px var(--red); }
   .volume-seg.gold { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
 
-  .now-playing-badge {
-    display: block;
-    margin-top: 8px;
-    padding: 4px 12px;
-    background: rgba(20,5,5,0.6);
-    border: 1px solid rgba(255,204,0,0.4);
-    border-radius: 20px;
-    color: var(--gold);
-    font-size: clamp(10px, 2.8vw, 12px);
-    max-width: 80vw;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: center;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
+  .now-playing-badge { display: block; margin-top: 8px; padding: 4px 12px; background: rgba(20,5,5,0.6); border: 1px solid rgba(255,204,0,0.4); border-radius: 20px; color: var(--gold); font-size: clamp(10px, 2.8vw, 12px); max-width: 80vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
   .now-playing-badge.show { opacity: 1; }
 
   .log-wrap { flex-shrink: 0; width: 100%; max-height: clamp(50px,12vh,95px); margin: 6px 0; border: 1px solid rgba(204,0,0,0.3); border-radius: 4px; background: rgba(20,5,5,0.7); overflow: hidden; }
@@ -196,21 +158,7 @@
   .radio-btn { background: rgba(204,0,0,0.1); border: 1px solid rgba(204,0,0,0.4); color: var(--red); padding: 8px 4px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 9px; text-align: center; }
   .radio-btn:active { background: rgba(204,0,0,0.3); }
 
-  .game-tile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 14px 8px;
-    background: rgba(204,0,0,0.12);
-    border: 1px solid rgba(204,0,0,0.4);
-    border-radius: 8px;
-    text-decoration: none;
-    color: var(--gold);
-    font-family: inherit;
-    transition: background .15s;
-  }
+  .game-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px 8px; background: rgba(204,0,0,0.12); border: 1px solid rgba(204,0,0,0.4); border-radius: 8px; text-decoration: none; color: var(--gold); font-family: inherit; transition: background .15s; }
   .game-tile:active { background: rgba(204,0,0,0.3); }
   .game-icon { font-size: 24px; }
   .game-name { font-size: 11px; text-align: center; letter-spacing: 1px; }
@@ -305,12 +253,9 @@
       <div class="track-title" id="trackTitle">Ничего не воспроизводится</div>
       <div class="audio-wrap" id="audioWrap"><audio id="audioPlayer" controls></audio></div>
       <div class="rutube-wrap" id="rutubeWrap"><iframe id="rutubeFrame" allow="autoplay; encrypted-media; fullscreen" allowfullscreen src="about:blank"></iframe></div>
-
       <button class="library-action" id="openLibraryFromPlayer">📂 Открыть фонотеку</button>
-
       <h3 style="font-size:11px;color:var(--gold);">📺 RUTUBE</h3>
       <div class="search-row"><input type="text" id="rutubeSearchInput" placeholder="Что найти на RUTUBE?" /><button id="rutubeSearchBtn">▶</button></div>
-
       <h3 style="font-size:11px;color:var(--gold);">📻 Радиостанции</h3>
       <div class="radio-row" id="radioRow"></div>
     </div>
@@ -365,7 +310,7 @@
     <p><span class="cmd">«Плакат»</span> · <span class="cmd">«Доска почёта»</span> · <span class="cmd">«Партбилет»</span></p>
     <p><span class="cmd">«Мудрость»</span> · <span class="cmd">«Проверка связи»</span> · <span class="cmd">«Тишина»</span></p>
     <h3>🤖 ИИ</h3>
-    <p>Любой другой вопрос — Товарищ попробует ответить через ИИ.</p>
+    <p>Любой другой вопрос — Товарищ ответит через ИИ с поиском в интернете.</p>
     <h3>⚙️ Управление</h3>
     <p><span class="cmd">«Помощь»</span> · <span class="cmd">«Стоп»</span></p>
     <button class="modal-close" id="closeHelp">Понятно</button>
@@ -376,26 +321,11 @@
   <div class="modal-content">
     <h2>🎮 ИГРЫ</h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
-      <a href="https://denisvadimovic82-del.github.io/genesis/" target="_blank" class="game-tile">
-        <span class="game-icon">🌍</span>
-        <span class="game-name">ГЕНЕЗИС</span>
-      </a>
-      <a href="https://denisvadimovic82-del.github.io/SoloLvL/" target="_blank" class="game-tile">
-        <span class="game-icon">⚔️</span>
-        <span class="game-name">Solo Leveling</span>
-      </a>
-      <a href="https://denisvadimovic82-del.github.io/awakening/" target="_blank" class="game-tile">
-        <span class="game-icon">🔥</span>
-        <span class="game-name">ПРОБУЖДЕНИЕ</span>
-      </a>
-      <a href="https://denisvadimovic82-del.github.io/monopoly-game-1.1/" target="_blank" class="game-tile">
-        <span class="game-icon">🎲</span>
-        <span class="game-name">Монополия</span>
-      </a>
-      <a href="https://denisvadimovic82-del.github.io/PrimordialCell/" target="_blank" class="game-tile" style="grid-column: span 2;">
-        <span class="game-icon">🧬</span>
-        <span class="game-name">ПЕРВОРОДНАЯ КЛЕТКА</span>
-      </a>
+      <a href="https://denisvadimovic82-del.github.io/genesis/" target="_blank" class="game-tile"><span class="game-icon">🌍</span><span class="game-name">ГЕНЕЗИС</span></a>
+      <a href="https://denisvadimovic82-del.github.io/SoloLvL/" target="_blank" class="game-tile"><span class="game-icon">⚔️</span><span class="game-name">Solo Leveling</span></a>
+      <a href="https://denisvadimovic82-del.github.io/awakening/" target="_blank" class="game-tile"><span class="game-icon">🔥</span><span class="game-name">ПРОБУЖДЕНИЕ</span></a>
+      <a href="https://denisvadimovic82-del.github.io/monopoly-game-1.1/" target="_blank" class="game-tile"><span class="game-icon">🎲</span><span class="game-name">Монополия</span></a>
+      <a href="https://denisvadimovic82-del.github.io/PrimordialCell/" target="_blank" class="game-tile" style="grid-column: span 2;"><span class="game-icon">🧬</span><span class="game-name">ПЕРВОРОДНАЯ КЛЕТКА</span></a>
     </div>
     <button class="modal-close" id="closeGames">Закрыть</button>
   </div>
@@ -423,10 +353,12 @@ const RADIO_STATIONS = {
   'somafm':            { name: 'SomaFM Groove',    url: 'https://ice5.somafm.com/groovesalad-128-mp3' }
 };
 
-// === ИИ (POLLINATIONS) ===
-const AI_ENDPOINT = 'https://text.pollinations.ai/openai';
+// === ИИ (OpenRouter через Cloudflare Worker) ===
+const WORKER_URL = 'https://silent-king-2089.denisvadimovic82.workers.dev';
+const AI_MODEL = 'openrouter/free';
+
 let aiHistory = [
-  { role: 'system', content: 'Ты — Товарищ, советский голосовой ассистент. Отвечай кратко (1-2 предложения), с лёгким советским колоритом, обращайся «товарищ». Не используй Markdown, только чистый текст для озвучки.' }
+  { role: 'system', content: 'Ты — Товарищ, советский голосовой ассистент. Отвечай кратко (1-3 предложения), с лёгким советским колоритом, обращайся «товарищ». Не используй Markdown, только чистый текст для озвучки. Если нужно найти свежую информацию — используй поиск.' }
 ];
 
 async function askAI(text) {
@@ -436,17 +368,32 @@ async function askAI(text) {
   addLog('🤖 Запрос к ИИ: ' + text, 'sys');
   try {
     aiHistory.push({ role: 'user', content: text });
-    if (aiHistory.length > 7) aiHistory = [aiHistory[0], ...aiHistory.slice(-6)];
-    const res = await fetch(AI_ENDPOINT, {
+    if (aiHistory.length > 9) aiHistory = [aiHistory[0], ...aiHistory.slice(-8)];
+
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'openai', messages: aiHistory, max_tokens: 150, temperature: 0.7 })
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages: aiHistory,
+        max_tokens: 200,
+        temperature: 0.7,
+        plugins: [{ id: 'web', max_results: 3 }]
+      })
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error('HTTP ' + res.status + ': ' + errText.slice(0, 120));
+    }
+
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content;
-    if (reply) { aiHistory.push({ role: 'assistant', content: reply }); speak(reply); addLog('🤖 ИИ: ' + reply, 'sys'); }
-    else throw new Error('Пустой ответ');
+    if (reply) {
+      aiHistory.push({ role: 'assistant', content: reply });
+      speak(reply);
+      addLog('🤖 ИИ: ' + reply, 'sys');
+    } else throw new Error('Пустой ответ');
   } catch (e) {
     addLog('⚠️ Ошибка ИИ: ' + e.message, 'sys');
     speak('Связь с центром потеряна, товарищ. Попробуйте позже.');
