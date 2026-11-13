@@ -272,9 +272,9 @@
     <h3>📺 RUTUBE</h3>
     <p><span class="cmd">«Найди на рутубе [запрос]»</span></p>
     <h3>📻 Радио</h3>
-    <p><span class="cmd">«Маяк»</span> · <span class="cmd">«Ретро FM»</span> · <span class="cmd">«Радио России»</span></p>
+    <p><span class="cmd">«Маяк»</span> · <span class="cmd">«Ретро FM»</span> · <span class="cmd">«Русское Радио»</span></p>
     <p><span class="cmd">«DFM»</span> · <span class="cmd">«Радио СССР»</span> · <span class="cmd">«Советская эстрада»</span></p>
-    <p><span class="cmd">«СССР 30-50»</span> · <span class="cmd">«СССР 50-70»</span></p>
+    <p><span class="cmd">«СССР 30-50»</span> · <span class="cmd">«СССР 50-70»</span> · <span class="cmd">«Вести ФМ»</span></p>
     <h3>⏰ Время</h3>
     <p><span class="cmd">«Который час»</span> · <span class="cmd">«Таймер на 5 минут»</span></p>
     <h3>📝 Заметки</h3>
@@ -298,8 +298,6 @@
 const LANG = "ru-RU";
 
 // === РАДИОСТАНЦИИ ===
-// Только HTTPS-потоки (работают на GitHub Pages)
-// HTTP-потоки (старый Маяк, старый Радио России) заменены или убраны
 const RADIO_STATIONS = {
   // Советские
   'радио ссср':        { name: 'Радио СССР',       url: 'https://listen3.myradio24.com/ussr' },
@@ -307,6 +305,7 @@ const RADIO_STATIONS = {
   'ссср 50-70':        { name: 'СССР 50-70',       url: 'https://srv12.gpmradio.ru:8443/stream/pro/aac/64/47' },
   'советская эстрада': { name: 'Советская эстрада', url: 'https://evcast.mediacp.eu:2075/stream' },
   'маяк':              { name: 'Радио Маяк',       url: 'https://icecast-vgtrk.cdnvideo.ru/mayakfm_aac_64kbps' },
+  'вести фм':          { name: 'Вести ФМ',         url: 'https://icecast-vgtrk.cdnvideo.ru/vestifm_mp3_128kbps' },
   // Ретро FM
   'ретро фм':          { name: 'Ретро FM',         url: 'https://retro.hostingradio.ru:8043/retro256.mp3' },
   'ретро 80':          { name: 'Ретро FM 80-х',    url: 'https://retro80.hostingradio.ru:8025/retro80-128.mp3' },
@@ -316,6 +315,7 @@ const RADIO_STATIONS = {
   'europa plus':       { name: 'Europa Plus',      url: 'https://ep128.hostingradio.ru:8030/ep128' },
   'record':            { name: 'Radio Record',     url: 'https://radiorecord.hostingradio.ru/rr_main96.aacp' },
   'maximum':           { name: 'Radio Maximum',    url: 'https://hls-01-maximum.hostingradio.ru/maximum/playlist.m3u8' },
+  'русское радио':     { name: 'Русское Радио',    url: 'https://rusradio.hostingradio.ru/rusradio128.mp3' },
   'родные песни':      { name: 'Родные Песни',     url: 'https://rodpesni.amgradio.ru/rp' },
   'somafm':            { name: 'SomaFM Groove',    url: 'https://ice5.somafm.com/groovesalad-128-mp3' }
 };
@@ -813,7 +813,8 @@ function handleCommand(text) {
   if (/(ссср 50-70)/.test(t)) { playRadio('ссср 50-70'); speak('СССР 50-70.'); return; }
   if (/(советская эстрада|советскую эстраду)/.test(t)) { playRadio('советская эстрада'); speak('Советская эстрада.'); return; }
   if (/(маяк|маяк фм)/.test(t)) { playRadio('маяк'); speak('Радио Маяк.'); return; }
-  if (/(радио россии)/.test(t)) { playRadio('радио россии'); speak('Радио России.'); return; }
+  if (/(вести фм|вести)/.test(t)) { playRadio('вести фм'); speak('Вести ФМ.'); return; }
+  if (/(русское радио)/.test(t)) { playRadio('русское радио'); speak('Русское Радио.'); return; }
   if (/(dfm|дфм)/.test(t)) { playRadio('dfm'); speak('DFM.'); return; }
   if (/(ретро фм|ретро)/.test(t)) { playRadio('ретро фм'); speak('Ретро FM.'); return; }
   if (/(ретро 80|восьмидесятые)/.test(t)) { playRadio('ретро 80'); speak('Ретро 80-х.'); return; }
