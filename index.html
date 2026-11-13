@@ -56,6 +56,11 @@
   .status-text.speaking, .status-text.playing { color: var(--gold); }
   @keyframes blinkSoft { 0%,100%{opacity:1} 50%{opacity:.5} }
 
+  .volume-meter { display: flex; flex-direction: row; gap: 3px; margin-top: 8px; opacity: .6; pointer-events: none; justify-content: center; }
+  .volume-seg { width: 8px; height: 12px; background: rgba(204,0,0,0.3); border-radius: 1px; }
+  .volume-seg.on { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .volume-seg.gold { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+
   .log-wrap { flex-shrink: 0; width: 100%; max-height: clamp(50px,12vh,95px); margin: 6px 0; border: 1px solid rgba(204,0,0,0.3); border-radius: 4px; background: rgba(20,5,5,0.7); overflow: hidden; }
   .log { height: 100%; overflow-y: auto; padding: 8px 10px; font-size: clamp(10px,2.8vw,12px); line-height: 1.5; }
   .log p { margin: 3px 0; }
@@ -75,10 +80,6 @@
 
   .gost-badge { position: fixed; bottom: calc(6px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); writing-mode: horizontal-tb; padding: 3px 10px; border: 1px solid rgba(204,0,0,0.5); border-radius: 4px; font-size: 7px; letter-spacing: 1px; color: var(--red-dim); opacity: .5; pointer-events: none; z-index: 5; white-space: nowrap; }
   .gost-badge::before { content: "ГОСТ 12.34 · СДЕЛАНО В СССР"; }
-  .volume-meter { position: fixed; left: calc(8px + var(--safe-left)); bottom: calc(100px + var(--safe-bottom)); display: flex; flex-direction: column-reverse; gap: 2px; z-index: 5; opacity: .4; pointer-events: none; }
-  .volume-seg { width: 6px; height: 8px; background: rgba(204,0,0,0.3); border-radius: 1px; }
-  .volume-seg.on { background: var(--red); box-shadow: 0 0 6px var(--red); }
-  .volume-seg.gold { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
 
   .alert-overlay { position: fixed; inset: 0; background: rgba(204,0,0,0.3); z-index: 999; pointer-events: none; opacity: 0; transition: opacity .3s; }
   .alert-overlay.on { opacity: 1; animation: alertFlash .5s infinite; }
@@ -145,6 +146,26 @@
   .now-playing-badge { position: fixed; top: calc(8px + var(--safe-top)); left: 50%; transform: translateX(-50%) translateY(-100px); z-index: 150; padding: 6px 14px; background: rgba(20,5,5,0.95); border: 1px solid rgba(255,204,0,0.6); border-radius: 20px; color: var(--gold); font-size: clamp(9px,2.5vw,11px); max-width: 70vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: transform .4s; pointer-events: none; }
   .now-playing-badge.show { transform: translateX(-50%) translateY(0); }
 
+  /* === ПЛИТКИ ИГР === */
+  .game-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 8px;
+    background: rgba(204,0,0,0.12);
+    border: 1px solid rgba(204,0,0,0.4);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--gold);
+    font-family: inherit;
+    transition: background .15s;
+  }
+  .game-tile:active { background: rgba(204,0,0,0.3); }
+  .game-icon { font-size: 24px; }
+  .game-name { font-size: 11px; text-align: center; letter-spacing: 1px; }
+
   @media (max-height: 620px) { .star-reactor { width: min(44vw,170px); height: min(44vw,170px); } .log-wrap { max-height: 48px; } }
 </style>
 </head>
@@ -162,10 +183,6 @@
 <div class="alert-overlay" id="alertOverlay"></div>
 <div class="poster-toast" id="posterToast"></div>
 <div class="gost-badge"></div>
-<div class="volume-meter" id="volumeMeter">
-  <div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div>
-  <div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div>
-</div>
 <div class="now-playing-badge" id="nowPlaying">—</div>
 
 <div class="app">
@@ -182,6 +199,10 @@
       <div class="core-star"><svg viewBox="0 0 100 100"><polygon points="50,5 61,38 97,38 68,59 79,92 50,71 21,92 32,59 3,38 39,38"/></svg></div>
     </div>
     <div class="status-bar"><div class="status-text" id="status">ТОВАРИЩ на связи</div></div>
+    <div class="volume-meter" id="volumeMeter">
+      <div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div>
+      <div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div>
+    </div>
   </div>
   <div class="log-wrap"><div class="log" id="log"><p class="sys">⚡ Система «Товарищ» инициализирована. Скажите «помощь».</p></div></div>
 
@@ -296,6 +317,36 @@
   </div>
 </div>
 
+<!-- === ОКНО ИГР === -->
+<div class="modal" id="gamesModal">
+  <div class="modal-content">
+    <h2>🎮 ИГРЫ</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+      <a href="https://denisvadimovic82-del.github.io/genesis/" target="_blank" class="game-tile">
+        <span class="game-icon">🌍</span>
+        <span class="game-name">ГЕНЕЗИС</span>
+      </a>
+      <a href="https://denisvadimovic82-del.github.io/SoloLvL/" target="_blank" class="game-tile">
+        <span class="game-icon">⚔️</span>
+        <span class="game-name">Solo Leveling</span>
+      </a>
+      <a href="https://denisvadimovic82-del.github.io/awakening/" target="_blank" class="game-tile">
+        <span class="game-icon">🔥</span>
+        <span class="game-name">ПРОБУЖДЕНИЕ</span>
+      </a>
+      <a href="https://denisvadimovic82-del.github.io/monopoly-game-1.1/" target="_blank" class="game-tile">
+        <span class="game-icon">🎲</span>
+        <span class="game-name">Монополия</span>
+      </a>
+      <a href="https://denisvadimovic82-del.github.io/PrimordialCell/" target="_blank" class="game-tile" style="grid-column: span 2;">
+        <span class="game-icon">🧬</span>
+        <span class="game-name">ПЕРВОРОДНАЯ КЛЕТКА</span>
+      </a>
+    </div>
+    <button class="modal-close" id="closeGames">Закрыть</button>
+  </div>
+</div>
+
 <script>
 const LANG = "ru-RU";
 
@@ -320,50 +371,29 @@ const RADIO_STATIONS = {
 };
 
 // === ИИ (POLLINATIONS) ===
-// Бесплатный эндпоинт без ключа. Лимит: ~1 запрос в 3-15 секунд с IP.
 const AI_ENDPOINT = 'https://text.pollinations.ai/openai';
 let aiHistory = [
   { role: 'system', content: 'Ты — Товарищ, советский голосовой ассистент. Отвечай кратко (1-2 предложения), с лёгким советским колоритом, обращайся «товарищ». Не используй Markdown, только чистый текст для озвучки.' }
 ];
 
 async function askAI(text) {
-  // Проверка на занятость (защита от спама запросами)
-  if (window._aiBusy) {
-    addLog('Товарищ уже думает...', 'sys');
-    return;
-  }
+  if (window._aiBusy) { addLog('Товарищ уже думает...', 'sys'); return; }
   window._aiBusy = true;
   setStatus('думаю...', 'speaking');
   addLog('🤖 Запрос к ИИ: ' + text, 'sys');
-
   try {
-    // Добавляем сообщение пользователя в историю
     aiHistory.push({ role: 'user', content: text });
-    // Ограничиваем историю последними 6 сообщениями (чтобы не раздувать токены)
     if (aiHistory.length > 7) aiHistory = [aiHistory[0], ...aiHistory.slice(-6)];
-
     const res = await fetch(AI_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai', // Базовая бесплатная модель
-        messages: aiHistory,
-        max_tokens: 150,
-        temperature: 0.7
-      })
+      body: JSON.stringify({ model: 'openai', messages: aiHistory, max_tokens: 150, temperature: 0.7 })
     });
-
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content;
-
-    if (reply) {
-      aiHistory.push({ role: 'assistant', content: reply });
-      speak(reply);
-      addLog('🤖 ИИ: ' + reply, 'sys');
-    } else {
-      throw new Error('Пустой ответ');
-    }
+    if (reply) { aiHistory.push({ role: 'assistant', content: reply }); speak(reply); addLog('🤖 ИИ: ' + reply, 'sys'); }
+    else throw new Error('Пустой ответ');
   } catch (e) {
     addLog('⚠️ Ошибка ИИ: ' + e.message, 'sys');
     speak('Связь с центром потеряна, товарищ. Попробуйте позже.');
@@ -377,6 +407,7 @@ const $ = id => document.getElementById(id);
 const reactor = $('reactor'), statusEl = $('status'), logEl = $('log'), micBtn = $('micBtn'), clockEl = $('clock');
 const netEl = $('netStatus'), batteryVal = $('batteryVal');
 const musicPanel = $('musicPanel'), libraryModal = $('libraryModal'), notesModal = $('notesModal'), settingsModal = $('settingsModal'), helpModal = $('helpModal');
+const gamesModal = $('gamesModal');
 const audioWrap = $('audioWrap'), audioPlayer = $('audioPlayer'), trackTitle = $('trackTitle'), nowPlayingEl = $('nowPlaying');
 const vizCanvas = $('vizCanvas'), rutubeWrap = $('rutubeWrap'), rutubeFrame = $('rutubeFrame'), rutubeSearchInput = $('rutubeSearchInput');
 const notesList = $('notesList'), noteInput = $('noteInput'), radioRow = $('radioRow');
@@ -480,7 +511,7 @@ setInterval(() => {
 
 setInterval(() => {
   volumeMeter.querySelectorAll('.volume-seg').forEach((s, i) => {
-    const on = isPlayingMusic && Math.random() > 0.5 - i * 0.05;
+    const on = isPlayingMusic && Math.random() > 0.5 - (9 - i) * 0.05;
     s.classList.toggle('on', on);
     s.classList.toggle('gold', on && i > 6);
   });
@@ -741,7 +772,8 @@ $('closeNotes').onclick = () => notesModal.classList.remove('open');
 $('settingsBtn').onclick = () => settingsModal.classList.add('open');
 $('closeSettings').onclick = () => settingsModal.classList.remove('open');
 $('closeHelp').onclick = () => helpModal.classList.remove('open');
-[settingsModal, helpModal, notesModal].forEach(m => m.onclick = e => { if (e.target === m) m.classList.remove('open'); });
+[settingsModal, helpModal, notesModal, gamesModal].forEach(m => m.onclick = e => { if (e.target === m) m.classList.remove('open'); });
+$('closeGames').onclick = () => gamesModal.classList.remove('open');
 
 document.querySelectorAll('.quick-btn').forEach(btn => {
   btn.onclick = () => {
@@ -750,7 +782,7 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
     else if (a === 'radio') { musicPanel.classList.add('open'); speak('Музыкальный отдел.'); }
     else if (a === 'rutube') { musicPanel.classList.add('open'); rutubeSearchInput.focus(); speak('Раздел RUTUBE.'); }
     else if (a === 'notes') { renderNotes(); notesModal.classList.add('open'); speak('Заметки открыты.'); }
-    else if (a === 'games') { speak('Угадай число, монетка или пошути. Или спроси что-нибудь — я подумаю.'); }
+    else if (a === 'games') { gamesModal.classList.add('open'); speak('Раздел игр.'); }
     else if (a === 'report') { giveReport(); }
   };
 });
@@ -974,7 +1006,6 @@ function handleCommand(text) {
   if (/(стоп|остановись|хватит|замолчи)/.test(t)) { synth.cancel(); stopListening(); return; }
   if (/(привет|здравствуй|хай|доброе утро|добрый день|добрый вечер)/.test(t)) { speak('Здравствуйте, товарищ.'); return; }
 
-  // Если ничего не распознали — спрашиваем ИИ
   if (navigator.onLine) {
     askAI(t);
   } else {
