@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a0a0a">
+<title>ТОВАРИЩ</title>
+<script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --red: #cc0000; --red-dim: #990000; --red-glow: rgba(204,0,0,0.6);
+    --gold: #ffcc00; --danger: #ff6600;
+    --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px); --safe-right: env(safe-area-inset-right, 0px);
+  }
+  html, body { height: 100%; width: 100%; overflow: hidden; background: #0d0505;
+    font-family: 'Courier New','PT Mono',monospace; color: var(--red);
+    user-select: none; -webkit-user-select: none; position: fixed; inset: 0; }
+
+  .hud-bg { position: fixed; inset: 0; background: radial-gradient(ellipse at center, rgba(120,0,0,0.2) 0%, transparent 60%), radial-gradient(circle at 50% 50%, #2a0a0a 0%, #1a0505 70%, #0d0000 100%); z-index: 0; overflow: hidden; }
+  .scanline { position: fixed; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--red), transparent); box-shadow: 0 0 20px var(--red); animation: scan 5s ease-in-out infinite; z-index: 5; opacity: 0.5; pointer-events: none; }
+  @keyframes scan { 0%,100%{top:0;opacity:0} 10%{opacity:.7} 50%{top:100%;opacity:.7} 90%{opacity:.7} }
+
+  .app { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; padding: calc(8px + var(--safe-top)) calc(8px + var(--safe-right)) calc(8px + var(--safe-bottom)) calc(8px + var(--safe-left)); }
+  .top-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; font-size: clamp(8px,2.4vw,11px); color: var(--red-dim); flex-shrink: 0; }
+  .top-bar .col { display: flex; flex-direction: column; gap: 2px; }
+  .top-bar .col.right { text-align: right; align-items: flex-end; }
+  .top-bar .col.center { align-items: center; text-align: center; flex: 1; }
+  .top-bar .label { color: var(--red); opacity: .9; text-transform: uppercase; }
+  .top-bar .val { color: var(--red); font-weight: bold; text-shadow: 0 0 8px var(--red-glow); }
+  .top-bar .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold); animation: blink 1.5s infinite; vertical-align: middle; margin-right: 4px; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .center-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; padding: 4px 0; }
+  .star-reactor { position: relative; width: min(58vw,260px); height: min(58vw,260px); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .star-reactor .star-outer { position: absolute; inset: 0; animation: starSpin 30s linear infinite; }
+  .star-reactor .star-mid { position: absolute; inset: 12%; animation: starSpin 18s linear infinite reverse; }
+  .star-reactor .star-inner { position: absolute; inset: 24%; animation: starSpin 12s linear infinite; }
+  @keyframes starSpin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  .star-svg { width: 100%; height: 100%; filter: drop-shadow(0 0 15px var(--red-glow)); }
+  .star-svg polygon { fill: none; stroke: var(--red); stroke-width: 1.5; opacity: .6; }
+  .core-star { position: relative; width: 32%; height: 32%; z-index: 2; }
+  .core-star svg { width: 100%; height: 100%; filter: drop-shadow(0 0 25px var(--red)); animation: corePulse 2.4s ease-in-out infinite; }
+  .core-star polygon { fill: var(--red); }
+  @keyframes corePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  .star-reactor.listening .core-star polygon { fill: var(--danger); }
+  .star-reactor.listening .core-star svg { animation: corePulseRed 0.7s ease-in-out infinite; }
+  @keyframes corePulseRed { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+  .star-reactor.speaking .core-star polygon, .star-reactor.playing .core-star polygon { fill: var(--gold); }
+  .star-reactor.playing .core-star svg { animation: corePulseMusic 0.9s ease-in-out infinite; }
+  @keyframes corePulseMusic { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
+  .status-bar { text-align: center; margin-top: clamp(6px,1.5vh,14px); flex-shrink: 0; width: 100%; }
+  .status-text { font-size: clamp(10px,3vw,14px); letter-spacing: 4px; text-transform: uppercase; color: var(--red); text-shadow: 0 0 10px var(--red-glow); min-height: 1.2em; padding: 0 12px; }
+  .status-text.listening { color: var(--danger); animation: blinkSoft 1s infinite; }
+  .status-text.speaking, .status-text.playing { color: var(--gold); }
+  @keyframes blinkSoft { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  .log-wrap { flex-shrink: 0; width: 100%; max-height: clamp(50px,12vh,95px); margin: 6px 0; border: 1px solid rgba(204,0,0,0.3); border-radius: 4px; background: rgba(20,5,5,0.7); overflow: hidden; }
+  .log { height: 100%; overflow-y: auto; padding: 8px 10px; font-size: clamp(10px,2.8vw,12px); line-height: 1.5; }
+  .log p { margin: 3px 0; }
+  .log .user { color: #ff9966; } .log .jarvis { color: var(--red); } .log .sys { color: var(--gold); font-style: italic; } .log .music { color: #ffcc66; }
+
+  .quick-access { flex-shrink: 0; display: flex; justify-content: center; gap: 6px; padding: 4px 0; flex-wrap: wrap; }
+  .quick-btn { background: rgba(204,0,0,0.12); border: 1px solid rgba(204,0,0,0.4); color: var(--red); padding: 6px 10px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: clamp(9px,2.4vw,11px); }
+  .quick-btn:active { background: rgba(204,0,0,0.3); }
+
+  .mic-wrap { flex-shrink: 0; display: flex; justify-content: center; padding-bottom: calc(28px + var(--safe-bottom)); gap: 12px; align-items: center; }
+  .mic-btn { width: clamp(56px,16vw,76px); height: clamp(56px,16vw,76px); border-radius: 50%; border: 2px solid var(--red); background: radial-gradient(circle at 40% 35%, rgba(204,0,0,0.3), rgba(204,0,0,0.05) 70%), rgba(30,5,5,0.8); color: var(--red); cursor: pointer; box-shadow: 0 0 20px rgba(204,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: clamp(20px,6.5vw,28px); z-index: 20; transition: all .25s; }
+  .mic-btn:active { transform: scale(.92); }
+  .mic-btn.active { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 30px var(--danger); animation: micPulse .8s ease-in-out infinite; }
+  @keyframes micPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+  .mini-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(204,0,0,0.4); background: rgba(30,5,5,0.7); color: var(--red); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .mini-btn:active { background: rgba(204,0,0,0.2); }
+
+  .gost-badge { position: fixed; bottom: calc(6px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); writing-mode: horizontal-tb; padding: 3px 10px; border: 1px solid rgba(204,0,0,0.5); border-radius: 4px; font-size: 7px; letter-spacing: 1px; color: var(--red-dim); opacity: .5; pointer-events: none; z-index: 5; white-space: nowrap; }
+  .gost-badge::before { content: "ГОСТ 12.34 · СДЕЛАНО В СССР"; }
+  .volume-meter { position: fixed; left: calc(8px + var(--safe-left)); bottom: calc(100px + var(--safe-bottom)); display: flex; flex-direction: column-reverse; gap: 2px; z-index: 5; opacity: .4; pointer-events: none; }
+  .volume-seg { width: 6px; height: 8px; background: rgba(204,0,0,0.3); border-radius: 1px; }
+  .volume-seg.on { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .volume-seg.gold { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+
+  .alert-overlay { position: fixed; inset: 0; background: rgba(204,0,0,0.3); z-index: 999; pointer-events: none; opacity: 0; transition: opacity .3s; }
+  .alert-overlay.on { opacity: 1; animation: alertFlash .5s infinite; }
+  @keyframes alertFlash { 0%,100%{background:rgba(204,0,0,.3)} 50%{background:rgba(204,0,0,.6)} }
+  .poster-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.8); z-index: 300; padding: 20px 28px; border: 2px solid var(--gold); background: rgba(20,5,5,0.95); color: var(--gold); font-size: 16px; letter-spacing: 2px; text-align: center; border-radius: 8px; opacity: 0; transition: all .3s; pointer-events: none; }
+  .poster-toast.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+
+  .lock-screen { position: fixed; inset: 0; z-index: 500; background: #0d0505; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+  .lock-screen.hidden { display: none; }
+  .lock-screen input { width: 200px; padding: 10px; background: rgba(204,0,0,0.1); border: 1px solid var(--red); color: var(--gold); text-align: center; font-size: 18px; border-radius: 4px; font-family: inherit; }
+  .lock-screen button { padding: 10px 20px; background: rgba(204,0,0,0.2); border: 1px solid var(--red); color: var(--red); border-radius: 4px; cursor: pointer; font-family: inherit; }
+
+  .library-modal, .modal, .music-panel { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: calc(12px + var(--safe-top)) calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(12px + var(--safe-left)); background: rgba(10,3,3,0.95); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 200; }
+  .library-modal.open, .modal.open, .music-panel.open { opacity: 1; pointer-events: auto; }
+  .library, .player, .modal-content { width: 100%; max-width: 560px; max-height: 100%; border: 1px solid rgba(204,0,0,0.5); border-radius: 8px; background: rgba(20,5,5,0.98); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(204,0,0,0.3); }
+  .music-panel .player { max-width: 420px; transform: scale(.9) translateY(20px); transition: transform .35s; }
+  .music-panel.open .player { transform: scale(1) translateY(0); }
+  .library-header, .player-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(204,0,0,0.3); flex-shrink: 0; }
+  .library-title, .player-title { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); font-weight: bold; }
+  .close-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--danger); background: rgba(255,102,0,0.1); color: var(--danger); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .library-body, .player-body { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .modal-content { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .modal-content h2 { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); text-align: center; margin-bottom: 6px; }
+  .modal-content h3 { font-size: 12px; color: var(--gold); margin: 6px 0; }
+  .modal-content p { font-size: 11px; color: var(--red); line-height: 1.6; }
+  .modal-content .cmd { color: #ff9966; }
+
+  .library-search-row, .search-row, .input-row { display: flex; gap: 6px; }
+  .library-search-row input, .search-row input, .input-row input { flex: 1; background: rgba(204,0,0,0.08); border: 1px solid rgba(204,0,0,0.4); color: var(--gold); padding: 8px 10px; border-radius: 4px; font-family: inherit; font-size: 12px; }
+  .library-action, .loader-btn, .search-row button, .input-row button, .modal-close { background: rgba(204,0,0,0.15); border: 1px solid var(--red); color: var(--red); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 11px; }
+  .library-action:active, .loader-btn:active, .search-row button:active, .input-row button:active, .modal-close:active { background: rgba(204,0,0,0.3); }
+  .loader-btn { width: 100%; text-align: left; }
+  .loader-hint { font-size: 9px; opacity: .6; margin-top: 2px; }
+  .library-actions { display: flex; gap: 6px; }
+  .library-status { font-size: 10px; color: var(--gold); opacity: .8; padding: 2px 0; }
+  .library-list { display: flex; flex-direction: column; gap: 4px; }
+  .library-empty { text-align: center; opacity: .6; font-size: 11px; padding: 20px 8px; color: var(--gold); }
+
+  .track-row { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid rgba(204,0,0,0.2); border-radius: 4px; cursor: pointer; transition: background .15s; }
+  .track-row:active { background: rgba(204,0,0,0.15); }
+  .track-row.active { border-color: var(--gold); background: rgba(255,204,0,0.08); }
+  .track-cover { width: 40px; height: 40px; border-radius: 4px; background: rgba(204,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; flex-shrink: 0; }
+  .track-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .track-info { flex: 1; min-width: 0; }
+  .track-name { font-size: 12px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-artist { font-size: 10px; color: var(--red); opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-play { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--red); background: rgba(204,0,0,0.15); color: var(--red); font-size: 12px; cursor: pointer; flex-shrink: 0; }
+  .track-play:active { background: rgba(204,0,0,0.4); }
+
+  .list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid rgba(204,0,0,0.3); border-radius: 4px; margin-bottom: 6px; font-size: 12px; color: var(--gold); }
+  .list-item button { background: transparent; border: 1px solid var(--danger); color: var(--danger); width: 24px; height: 24px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+  .visualizer { width: 100%; height: 44px; border-radius: 4px; border: 1px solid rgba(204,0,0,0.3); background: rgba(0,0,0,0.5); overflow: hidden; }
+  .visualizer canvas { width: 100%; height: 100%; display: block; }
+  .track-title { font-size: clamp(11px,3vw,13px); color: var(--gold); text-align: center; padding: 6px 8px; border: 1px solid rgba(204,0,0,0.3); border-radius: 4px; background: rgba(204,0,0,0.08); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .audio-wrap { width: 100%; padding: 6px; background: rgba(204,0,0,0.08); border: 1px solid rgba(204,0,0,0.3); border-radius: 4px; display: none; }
+  .audio-wrap audio { width: 100%; filter: invert(0.85) hue-rotate(0deg) sepia(0.3); }
+  .rutube-wrap { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 4px; border: 1px solid rgba(204,0,0,0.3); overflow: hidden; display: none; }
+  .rutube-wrap iframe { width: 100%; height: 100%; border: none; }
+  .radio-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+  .radio-btn { background: rgba(204,0,0,0.1); border: 1px solid rgba(204,0,0,0.4); color: var(--red); padding: 8px 4px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 9px; text-align: center; }
+  .radio-btn:active { background: rgba(204,0,0,0.3); }
+
+  .now-playing-badge { position: fixed; top: calc(8px + var(--safe-top)); left: 50%; transform: translateX(-50%) translateY(-100px); z-index: 150; padding: 6px 14px; background: rgba(20,5,5,0.95); border: 1px solid rgba(255,204,0,0.6); border-radius: 20px; color: var(--gold); font-size: clamp(9px,2.5vw,11px); max-width: 70vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: transform .4s; pointer-events: none; }
+  .now-playing-badge.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-height: 620px) { .star-reactor { width: min(44vw,170px); height: min(44vw,170px); } .log-wrap { max-height: 48px; } }
+</style>
+</head>
+<body>
+
+<div class="lock-screen hidden" id="lockScreen">
+  <div style="color:var(--gold);letter-spacing:3px;">★ ТОВАРИЩ ★</div>
+  <div style="font-size:11px;color:var(--red);">Введите пароль</div>
+  <input type="password" id="lockInput" maxlength="20" />
+  <button id="lockBtn">ВОЙТИ</button>
+</div>
+
+<div class="hud-bg"></div>
+<div class="scanline"></div>
+<div class="alert-overlay" id="alertOverlay"></div>
+<div class="poster-toast" id="posterToast"></div>
+<div class="gost-badge"></div>
+<div class="volume-meter" id="volumeMeter">
+  <div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div>
+  <div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div><div class="volume-seg"></div>
+</div>
+<div class="now-playing-badge" id="nowPlaying">—</div>
+
+<div class="app">
+  <div class="top-bar">
+    <div class="col left"><div class="label">ПИТАНИЕ</div><div class="val"><span class="dot"></span><span id="batteryVal">—</span></div></div>
+    <div class="col center"><div class="label">ВРЕМЯ</div><div class="val" id="clock">--:--:--</div></div>
+    <div class="col right"><div class="label">СВЯЗЬ</div><div class="val" id="netStatus">50 Гц</div></div>
+  </div>
+  <div class="center-area">
+    <div class="star-reactor" id="reactor">
+      <div class="star-outer"><svg class="star-svg" viewBox="0 0 100 100"><polygon points="50,5 61,38 97,38 68,59 79,92 50,71 21,92 32,59 3,38 39,38"/></svg></div>
+      <div class="star-mid"><svg class="star-svg" viewBox="0 0 100 100"><polygon points="50,5 61,38 97,38 68,59 79,92 50,71 21,92 32,59 3,38 39,38"/></svg></div>
+      <div class="star-inner"><svg class="star-svg" viewBox="0 0 100 100"><polygon points="50,5 61,38 97,38 68,59 79,92 50,71 21,92 32,59 3,38 39,38"/></svg></div>
+      <div class="core-star"><svg viewBox="0 0 100 100"><polygon points="50,5 61,38 97,38 68,59 79,92 50,71 21,92 32,59 3,38 39,38"/></svg></div>
+    </div>
+    <div class="status-bar"><div class="status-text" id="status">ТОВАРИЩ на связи</div></div>
+  </div>
+  <div class="log-wrap"><div class="log" id="log"><p class="sys">⚡ Система «Товарищ» инициализирована. Скажите «помощь».</p></div></div>
+
+  <div class="quick-access">
+    <button class="quick-btn" data-action="library">📂 Фонотека</button>
+    <button class="quick-btn" data-action="radio">📻 Радио</button>
+    <button class="quick-btn" data-action="rutube">📺 RUTUBE</button>
+    <button class="quick-btn" data-action="notes">📝 Заметки</button>
+    <button class="quick-btn" data-action="games">🎮 Игры</button>
+    <button class="quick-btn" data-action="report">📡 Сводка</button>
+  </div>
+
+  <div class="mic-wrap">
+    <button class="mini-btn" id="notesBtn" title="Заметки">📝</button>
+    <button class="mic-btn" id="micBtn">🎤</button>
+    <button class="mini-btn" id="settingsBtn" title="Настройки">⚙️</button>
+  </div>
+</div>
+
+<div class="library-modal" id="libraryModal">
+  <div class="library">
+    <div class="library-header"><div class="library-title">★ ФОНОТЕКА ★</div><button class="close-btn" id="closeLibrary">✕</button></div>
+    <div class="library-body">
+      <button class="loader-btn" id="pickFolderBtn">📂 Выбрать папку с музыкой<div class="loader-hint">Chrome/Edge десктоп</div></button>
+      <button class="loader-btn" id="pickMultipleBtn">📁 Выбрать несколько файлов<div class="loader-hint">Работает везде</div></button>
+      <input type="file" id="folderInput" multiple webkitdirectory style="display:none" />
+      <input type="file" id="filesInput" multiple accept="audio/*" style="display:none" />
+      <div class="library-search-row"><input type="text" id="librarySearch" placeholder="Поиск: название, исполнитель, файл..." /></div>
+      <div class="library-actions">
+        <button class="library-action" id="playAllBtn">▶ Играть всё</button>
+        <button class="library-action" id="shuffleBtn">🔀 Перемешать</button>
+        <button class="library-action" id="clearLibraryBtn">🗑 Очистить</button>
+      </div>
+      <div class="library-status" id="libraryStatus">Фонотека не загружена</div>
+      <div class="library-list" id="libraryList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="music-panel" id="musicPanel">
+  <div class="player">
+    <div class="player-header"><div class="player-title">★ МУЗЫКАЛЬНЫЙ ОТДЕЛ ★</div><button class="close-btn" id="closeMusic">✕</button></div>
+    <div class="player-body">
+      <div class="visualizer"><canvas id="vizCanvas"></canvas></div>
+      <div class="track-title" id="trackTitle">Ничего не воспроизводится</div>
+      <div class="audio-wrap" id="audioWrap"><audio id="audioPlayer" controls></audio></div>
+      <div class="rutube-wrap" id="rutubeWrap"><iframe id="rutubeFrame" allow="autoplay; encrypted-media; fullscreen" allowfullscreen src="about:blank"></iframe></div>
+
+      <button class="library-action" id="openLibraryFromPlayer">📂 Открыть фонотеку</button>
+
+      <h3 style="font-size:11px;color:var(--gold);">📺 RUTUBE</h3>
+      <div class="search-row"><input type="text" id="rutubeSearchInput" placeholder="Что найти на RUTUBE?" /><button id="rutubeSearchBtn">▶</button></div>
+
+      <h3 style="font-size:11px;color:var(--gold);">📻 Радиостанции</h3>
+      <div class="radio-row" id="radioRow"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="notesModal">
+  <div class="modal-content">
+    <h2>📝 Заметки</h2>
+    <div class="input-row"><input type="text" id="noteInput" placeholder="Новая заметка..." /><button id="addNote">+</button></div>
+    <div id="notesList"></div>
+    <button class="modal-close" id="closeNotes">Закрыть</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <h2>⚙️ Настройки</h2>
+    <h3>🎨 Цветовая схема</h3>
+    <p>Советская: красный и золотой</p>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <div style="flex:1;aspect-ratio:1;background:#cc0000;border-radius:8px;border:2px solid #fff;"></div>
+      <div style="flex:1;aspect-ratio:1;background:#ffcc00;border-radius:8px;"></div>
+    </div>
+    <button class="modal-close" id="closeSettings">Закрыть</button>
+  </div>
+</div>
+
+<div class="modal" id="helpModal">
+  <div class="modal-content">
+    <h2>📋 Команды товарища</h2>
+    <h3>📂 Фонотека</h3>
+    <p><span class="cmd">«Открой фонотеку»</span> · <span class="cmd">«Включи [песня]»</span></p>
+    <p><span class="cmd">«Следующий»</span> · <span class="cmd">«Перемешай»</span></p>
+    <h3>📺 RUTUBE</h3>
+    <p><span class="cmd">«Найди на рутубе [запрос]»</span></p>
+    <h3>📻 Радио</h3>
+    <p><span class="cmd">«Маяк»</span> · <span class="cmd">«Ретро FM»</span> · <span class="cmd">«Радио России»</span></p>
+    <p><span class="cmd">«DFM»</span> · <span class="cmd">«Радио СССР»</span> · <span class="cmd">«Советская эстрада»</span></p>
+    <p><span class="cmd">«СССР 30-50»</span> · <span class="cmd">«СССР 50-70»</span></p>
+    <h3>⏰ Время</h3>
+    <p><span class="cmd">«Который час»</span> · <span class="cmd">«Таймер на 5 минут»</span></p>
+    <h3>📝 Заметки</h3>
+    <p><span class="cmd">«Запиши: купить хлеб»</span> · <span class="cmd">«Что в заметках»</span></p>
+    <h3>📱 Телефон</h3>
+    <p><span class="cmd">«Позвони 89123456789»</span> · <span class="cmd">«Напиши смс»</span></p>
+    <p><span class="cmd">«Сколько заряда»</span> · <span class="cmd">«Вибрация»</span></p>
+    <h3>🎮 Игры</h3>
+    <p><span class="cmd">«Угадай число»</span> · <span class="cmd">«Монетка»</span> · <span class="cmd">«Пошути»</span></p>
+    <h3>🇷🇺 Советское</h3>
+    <p><span class="cmd">«Сводка»</span> · <span class="cmd">«Тревога»</span> · <span class="cmd">«Отбой»</span></p>
+    <p><span class="cmd">«Плакат»</span> · <span class="cmd">«Доска почёта»</span> · <span class="cmd">«Партбилет»</span></p>
+    <p><span class="cmd">«Мудрость»</span> · <span class="cmd">«Проверка связи»</span> · <span class="cmd">«Тишина»</span></p>
+    <h3>⚙️ Управление</h3>
+    <p><span class="cmd">«Помощь»</span> · <span class="cmd">«Стоп»</span></p>
+    <button class="modal-close" id="closeHelp">Понятно</button>
+  </div>
+</div>
+
+<script>
+const LANG = "ru-RU";
+
+// === РАДИОСТАНЦИИ ===
+// HTTP-потоки (Радио России, Маяк) работают только при открытии файла локально (file://)
+const RADIO_STATIONS = {
+  'радио ссср':        { name: 'Радио СССР',       url: 'https://listen3.myradio24.com/ussr' },
+  'ссср 30-50':        { name: 'СССР 30-50',       url: 'https://pub0202.101.ru:8443/stream/pro/aac/64/46' },
+  'ссср 50-70':        { name: 'СССР 50-70',       url: 'https://srv12.gpmradio.ru:8443/stream/pro/aac/64/47' },
+  'советская эстрада': { name: 'Советская эстрада', url: 'https://evcast.mediacp.eu:2075/stream' },
+  'радио россии':      { name: 'Радио России',     url: 'http://icecast.vgtrk.cdnvideo.ru/rrzonam_aac_64kbps' },
+  'маяк':              { name: 'Радио Маяк',       url: 'http://icecast.vgtrk.cdnvideo.ru/mayakfm_mp3_192kbps' },
+  'ретро фм':          { name: 'Ретро FM',         url: 'https://retro.hostingradio.ru:8043/retro256.mp3' },
+  'ретро 80':          { name: 'Ретро FM 80-х',    url: 'https://retro80.hostingradio.ru:8025/retro80-128.mp3' },
+  'ретро 70':          { name: 'Ретро FM 70-х',    url: 'https://retro70.hostingradio.ru:8025/retro70-128.mp3' },
+  'dfm':               { name: 'DFM',              url: 'https://dfm.hostingradio.ru/dfm128.mp3' },
+  'europa plus':       { name: 'Europa Plus',      url: 'https://ep128.hostingradio.ru:8030/ep128' },
+  'record':            { name: 'Radio Record',     url: 'https://radiorecord.hostingradio.ru/rr_main96.aacp' },
+  'maximum':           { name: 'Radio Maximum',    url: 'https://hls-01-maximum.hostingradio.ru/maximum/playlist.m3u8' },
+  'родные песни':      { name: 'Родные Песни',     url: 'https://rodpesni.amgradio.ru/rp' },
+  'somafm':            { name: 'SomaFM Groove',    url: 'https://ice5.somafm.com/groovesalad-128-mp3' }
+};
+
+const $ = id => document.getElementById(id);
+const reactor = $('reactor'), statusEl = $('status'), logEl = $('log'), micBtn = $('micBtn'), clockEl = $('clock');
+const netEl = $('netStatus'), batteryVal = $('batteryVal');
+const musicPanel = $('musicPanel'), libraryModal = $('libraryModal'), notesModal = $('notesModal'), settingsModal = $('settingsModal'), helpModal = $('helpModal');
+const audioWrap = $('audioWrap'), audioPlayer = $('audioPlayer'), trackTitle = $('trackTitle'), nowPlayingEl = $('nowPlaying');
+const vizCanvas = $('vizCanvas'), rutubeWrap = $('rutubeWrap'), rutubeFrame = $('rutubeFrame'), rutubeSearchInput = $('rutubeSearchInput');
+const notesList = $('notesList'), noteInput = $('noteInput'), radioRow = $('radioRow');
+const libraryList = $('libraryList'), librarySearch = $('librarySearch'), libraryStatus = $('libraryStatus');
+const folderInput = $('folderInput'), filesInput = $('filesInput');
+const alertOverlay = $('alertOverlay'), posterToast = $('posterToast'), volumeMeter = $('volumeMeter');
+const lockScreen = $('lockScreen'), lockInput = $('lockInput'), lockBtn = $('lockBtn');
+
+let listening = false, recognition = null;
+const synth = window.speechSynthesis;
+let currentVoice = null, isPlayingMusic = false, isRutubeMode = false;
+let notes = []; try { notes = JSON.parse(localStorage.getItem('tovarish_notes') || '[]'); } catch(e) { notes = []; }
+let localTracks = [], currentQueue = [], currentIndex = -1, currentObjectURL = null;
+let guessTarget = null, timerId = null;
+let playCounts = {}; try { playCounts = JSON.parse(localStorage.getItem('tovarish_plays') || '{}'); } catch(e) { playCounts = {}; }
+let isSilentMode = false, audioCtx = null;
+let vizBars = [], vizActive = false, vizFrameId = null;
+
+function getAudioCtx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function beep(freq, dur, type='square', vol=0.05) {
+  try {
+    const ctx = getAudioCtx(); const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.connect(g); g.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+function playClick() { beep(800, 0.03); }
+function playStartupTone() { beep(50, 0.5, 'sawtooth', 0.1); }
+function playMetronomeTick() { beep(1000, 0.05, 'sine', 0.03); }
+function playAlertSiren() {
+  try {
+    const ctx = getAudioCtx(); const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 1);
+    osc.frequency.linearRampToValueAtTime(400, ctx.currentTime + 2);
+    g.gain.setValueAtTime(0.15, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.5);
+    osc.connect(g); g.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 2.5);
+  } catch(e) {}
+}
+
+function addLog(text, cls = 'jarvis') {
+  const p = document.createElement('p'); p.className = cls; p.textContent = text;
+  logEl.appendChild(p); logEl.scrollTop = logEl.scrollHeight;
+  while (logEl.children.length > 40) logEl.removeChild(logEl.firstChild);
+}
+function setStatus(text, state = '') {
+  statusEl.textContent = text;
+  statusEl.classList.remove('listening','speaking','playing');
+  if (state) statusEl.classList.add(state);
+}
+function vibrate(p) { if (navigator.vibrate) navigator.vibrate(p); }
+
+function pickVoice() {
+  const voices = synth.getVoices();
+  currentVoice = voices.find(v => /ru/i.test(v.lang) && /male|иван|yuri|pavel/i.test(v.name)) ||
+    voices.find(v => /ru/i.test(v.lang)) || voices[0] || null;
+}
+if (synth) { pickVoice(); synth.onvoiceschanged = pickVoice; }
+
+function speak(text) {
+  if (!synth) return;
+  synth.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = LANG; u.rate = isSilentMode ? 0.8 : 1.05; u.pitch = 0.95; u.volume = isSilentMode ? 0.3 : 1;
+  if (currentVoice) u.voice = currentVoice;
+  u.onstart = () => { reactor.classList.add('speaking'); if (!isPlayingMusic) setStatus('говорит...','speaking'); };
+  u.onend = () => {
+    reactor.classList.remove('speaking');
+    if (listening) setStatus('слушаю...','listening');
+    else if (isPlayingMusic) setStatus('♪ музыка ♪','playing');
+    else setStatus('ожидание');
+  };
+  synth.speak(u);
+  addLog('ТОВАРИЩ: ' + text, 'jarvis');
+}
+
+// === ПИТАНИЕ ===
+if (navigator.getBattery) {
+  navigator.getBattery().then(b => {
+    const update = () => { batteryVal.textContent = Math.round(b.level*100) + '%' + (b.charging ? '⚡' : ''); };
+    update();
+    b.addEventListener('levelchange', update);
+    b.addEventListener('chargingchange', update);
+  }).catch(() => { batteryVal.textContent = '—'; });
+} else { batteryVal.textContent = '—'; }
+
+function updateNet() {
+  netEl.textContent = navigator.onLine ? '50 Гц' : '0 Гц';
+  netEl.style.color = navigator.onLine ? '' : 'var(--danger)';
+}
+window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet); updateNet();
+
+setInterval(() => {
+  const d = new Date(); const p = n => n.toString().padStart(2,'0');
+  clockEl.textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}, 1000);
+
+setInterval(() => {
+  volumeMeter.querySelectorAll('.volume-seg').forEach((s, i) => {
+    const on = isPlayingMusic && Math.random() > 0.5 - i * 0.05;
+    s.classList.toggle('on', on);
+    s.classList.toggle('gold', on && i > 6);
+  });
+}, 150);
+
+// === ВИЗУАЛИЗАТОР ===
+const ctx = vizCanvas.getContext('2d');
+function initViz() {
+  const r = vizCanvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  vizCanvas.width = r.width * dpr; vizCanvas.height = r.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  vizBars = Array.from({length: 32}, () => ({ h: 2 }));
+}
+function drawViz() {
+  if (!vizActive) return;
+  const w = vizCanvas.width / (window.devicePixelRatio||1);
+  const h = vizCanvas.height / (window.devicePixelRatio||1);
+  ctx.clearRect(0,0,w,h);
+  const bw = w/32;
+  for (let i=0;i<32;i++) {
+    const bar = vizBars[i];
+    if (isPlayingMusic) {
+      const t = Math.abs(Math.sin(Date.now()/300+i*0.4))*(h*0.6)+Math.random()*h*0.3+2;
+      bar.h += (t-bar.h)*0.25;
+    } else bar.h += (2-bar.h)*0.15;
+    const bh = Math.min(bar.h, h-2), x = i*bw+1.5, y = h-bh;
+    const g = ctx.createLinearGradient(0,h,0,y);
+    g.addColorStop(0,'#cc0000'); g.addColorStop(1,'#ffcc00');
+    ctx.fillStyle = g; ctx.fillRect(x,y,bw-3,bh);
+  }
+  vizFrameId = requestAnimationFrame(drawViz);
+}
+const vizObserver = new MutationObserver(() => {
+  if (musicPanel.classList.contains('open')) {
+    initViz(); vizActive = true;
+    if (vizFrameId) cancelAnimationFrame(vizFrameId);
+    drawViz();
+  } else {
+    vizActive = false;
+    if (vizFrameId) { cancelAnimationFrame(vizFrameId); vizFrameId = null; }
+  }
+});
+vizObserver.observe(musicPanel, { attributes: true, attributeFilter: ['class'] });
+window.addEventListener('resize', () => { if (musicPanel.classList.contains('open')) initViz(); });
+
+// === ФОНОТЕКА ===
+function isAudioFile(f) { return f.type.startsWith('audio/') || /\.(mp3|wav|ogg|flac|m4a|aac)$/i.test(f.name); }
+async function readTags(file) {
+  return new Promise((resolve) => {
+    if (typeof jsmediatags === 'undefined') { resolve({ title: file.name.replace(/\.[^.]+$/, ''), artist: 'Неизвестен', picture: null }); return; }
+    jsmediatags.read(file, {
+      onSuccess: (tag) => {
+        const t = tag.tags || {};
+        let picture = null;
+        if (t.picture) { try { picture = URL.createObjectURL(new Blob([new Uint8Array(t.picture.data)], { type: t.picture.format })); } catch(e) {} }
+        resolve({ title: t.title || file.name.replace(/\.[^.]+$/, ''), artist: t.artist || 'Неизвестен', picture });
+      },
+      onError: () => resolve({ title: file.name.replace(/\.[^.]+$/, ''), artist: 'Неизвестен', picture: null })
+    });
+  });
+}
+async function addFiles(files) {
+  const arr = Array.from(files).filter(isAudioFile);
+  if (arr.length === 0) { libraryStatus.textContent = 'Аудиофайлы не найдены'; return; }
+  libraryStatus.textContent = 'Чтение: 0/' + arr.length;
+  for (let i = 0; i < arr.length; i++) {
+    const file = arr[i];
+    if (localTracks.some(t => t.file.name === file.name && t.file.size === file.size)) continue;
+    const tags = await readTags(file);
+    localTracks.push({ file, name: file.name, ...tags });
+    if (i % 5 === 0) libraryStatus.textContent = `Чтение: ${i+1}/${arr.length}`;
+  }
+  libraryStatus.textContent = `Треков: ${localTracks.length}`;
+  addLog(`📂 Фонотека: +${arr.length} файлов`, 'sys');
+  renderLibrary();
+}
+$('pickFolderBtn').onclick = async () => {
+  try {
+    if (!window.showDirectoryPicker) { folderInput.click(); return; }
+    const dir = await window.showDirectoryPicker(); const files = [];
+    for await (const e of dir.values()) if (e.kind === 'file') files.push(await e.getFile());
+    await addFiles(files);
+  } catch(e) { if (e.name !== 'AbortError') folderInput.click(); }
+};
+$('pickMultipleBtn').onclick = () => filesInput.click();
+folderInput.onchange = (e) => { addFiles(e.target.files); folderInput.value = ''; };
+filesInput.onchange = (e) => { addFiles(e.target.files); filesInput.value = ''; };
+
+function searchLocalTracks(q) {
+  const s = q.toLowerCase().trim(); if (!s) return localTracks.slice();
+  return localTracks.filter(t => t.name.toLowerCase().includes(s) || t.title.toLowerCase().includes(s) || t.artist.toLowerCase().includes(s));
+}
+function renderLibrary() {
+  libraryList.innerHTML = '';
+  const filtered = searchLocalTracks(librarySearch.value);
+  if (filtered.length === 0) {
+    const d = document.createElement('div'); d.className = 'library-empty';
+    d.textContent = localTracks.length === 0 ? 'Фонотека пуста. Загрузите музыку.' : 'Ничего не найдено.';
+    libraryList.appendChild(d); return;
+  }
+  filtered.slice(0, 300).forEach(t => {
+    const row = document.createElement('div'); row.className = 'track-row';
+    if (currentQueue[currentIndex] && currentQueue[currentIndex].file === t.file) row.classList.add('active');
+    const cover = document.createElement('div'); cover.className = 'track-cover';
+    if (t.picture) { const img = document.createElement('img'); img.src = t.picture; cover.appendChild(img); } else cover.textContent = '★';
+    const info = document.createElement('div'); info.className = 'track-info';
+    const n = document.createElement('div'); n.className = 'track-name'; n.textContent = t.title;
+    const a = document.createElement('div'); a.className = 'track-artist'; a.textContent = t.artist;
+    info.appendChild(n); info.appendChild(a);
+    const btn = document.createElement('button'); btn.className = 'track-play'; btn.textContent = '▶';
+    btn.onclick = (e) => { e.stopPropagation(); playFromLibrary(t, filtered); };
+    row.appendChild(cover); row.appendChild(info); row.appendChild(btn);
+    row.onclick = () => playFromLibrary(t, filtered);
+    libraryList.appendChild(row);
+  });
+}
+function playFromLibrary(track, list) {
+  currentQueue = list || searchLocalTracks(librarySearch.value);
+  currentIndex = currentQueue.findIndex(t => t.file === track.file);
+  if (currentIndex < 0) currentIndex = 0;
+  playCurrent();
+  libraryModal.classList.remove('open'); musicPanel.classList.add('open');
+}
+function playCurrent() {
+  if (currentIndex < 0 || currentIndex >= currentQueue.length) return;
+  const t = currentQueue[currentIndex];
+  if (currentObjectURL) URL.revokeObjectURL(currentObjectURL);
+  currentObjectURL = URL.createObjectURL(t.file);
+  isRutubeMode = false;
+  rutubeWrap.style.display = 'none'; rutubeFrame.src = 'about:blank';
+  audioWrap.style.display = 'block';
+  audioPlayer.src = currentObjectURL;
+  audioPlayer.play().catch(() => {});
+  trackTitle.textContent = '♪ ' + t.title + ' — ' + t.artist;
+  nowPlayingEl.textContent = t.title + ' — ' + t.artist; nowPlayingEl.classList.add('show');
+  isPlayingMusic = true; reactor.classList.add('playing'); setStatus('♪ музыка ♪','playing');
+  playCounts[t.title] = (playCounts[t.title] || 0) + 1;
+  localStorage.setItem('tovarish_plays', JSON.stringify(playCounts));
+  addLog('♪ ' + t.title + ' — ' + t.artist, 'music');
+  renderLibrary();
+}
+function playNext() {
+  if (currentQueue.length === 0) { speak('Очередь пуста.'); return; }
+  if (currentIndex + 1 < currentQueue.length) { currentIndex++; playCurrent(); }
+  else speak('Это был последний трек.');
+}
+function playPrev() {
+  if (currentIndex - 1 >= 0) { currentIndex--; playCurrent(); }
+}
+function shufflePlay() {
+  if (localTracks.length === 0) { speak('Фонотека пуста.'); return; }
+  currentQueue = localTracks.slice().sort(() => Math.random() - 0.5); currentIndex = 0; playCurrent();
+  libraryModal.classList.remove('open'); musicPanel.classList.add('open');
+}
+$('playAllBtn').onclick = () => {
+  const f = searchLocalTracks(librarySearch.value); if (f.length === 0) return;
+  currentQueue = f.slice(); currentIndex = 0; playCurrent();
+  libraryModal.classList.remove('open'); musicPanel.classList.add('open');
+};
+$('shuffleBtn').onclick = shufflePlay;
+$('clearLibraryBtn').onclick = () => {
+  localTracks.forEach(t => { if (t.picture) URL.revokeObjectURL(t.picture); });
+  localTracks = []; currentQueue = []; currentIndex = -1;
+  libraryStatus.textContent = 'Фонотека очищена'; renderLibrary();
+};
+librarySearch.oninput = () => renderLibrary();
+$('closeLibrary').onclick = () => libraryModal.classList.remove('open');
+$('openLibraryFromPlayer').onclick = () => { musicPanel.classList.remove('open'); libraryModal.classList.add('open'); renderLibrary(); };
+
+// === RUTUBE ===
+function searchRutube(query) {
+  if (!query.trim()) return;
+  const url = 'https://rutube.ru/search/?query=' + encodeURIComponent(query.trim());
+  addLog('📺 RUTUBE поиск: ' + query, 'music');
+  speak('Ищу на RUTUBE: ' + query);
+  window.open(url, '_blank');
+}
+function embedRutubeVideo(videoId) {
+  if (!videoId) return;
+  musicPanel.classList.add('open');
+  isRutubeMode = true;
+  audioWrap.style.display = 'none'; audioPlayer.pause(); audioPlayer.src = '';
+  if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
+  rutubeWrap.style.display = 'block';
+  rutubeFrame.src = 'https://rutube.ru/play/embed/' + videoId;
+  trackTitle.textContent = '📺 RUTUBE: ' + videoId;
+  nowPlayingEl.textContent = 'RUTUBE'; nowPlayingEl.classList.add('show');
+  isPlayingMusic = true; reactor.classList.add('playing'); setStatus('📺 RUTUBE','playing');
+  addLog('📺 Видео RUTUBE: ' + videoId, 'music');
+}
+function extractRutubeId(text) {
+  const m1 = text.match(/rutube\.ru\/video\/([a-z0-9]+)/i);
+  if (m1) return m1[1];
+  const m2 = text.match(/rutube\.ru\/play\/embed\/([a-z0-9]+)/i);
+  if (m2) return m2[1];
+  return null;
+}
+$('rutubeSearchBtn').onclick = () => searchRutube(rutubeSearchInput.value);
+rutubeSearchInput.onkeydown = e => { if (e.key === 'Enter') searchRutube(rutubeSearchInput.value); };
+
+// === РАДИО ===
+function playRadio(key) {
+  const k = key.toLowerCase(); let st = RADIO_STATIONS[k];
+  if (!st) for (const [rk, rv] of Object.entries(RADIO_STATIONS)) if (rk.includes(k) || k.includes(rk)) { st = rv; break; }
+  if (!st) { speak('Станция не найдена или недоступна, товарищ.'); return; }
+  musicPanel.classList.add('open');
+  isRutubeMode = false;
+  rutubeWrap.style.display = 'none'; rutubeFrame.src = 'about:blank';
+  if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
+  audioWrap.style.display = 'block';
+  audioPlayer.src = st.url;
+  audioPlayer.play().catch(() => addLog('⚠️ Поток недоступен (HTTP на HTTPS-странице)', 'sys'));
+  trackTitle.textContent = '📻 ' + st.name;
+  nowPlayingEl.textContent = st.name; nowPlayingEl.classList.add('show');
+  isPlayingMusic = true; reactor.classList.add('playing'); setStatus('♪ радио ♪','playing');
+  addLog('📻 Радио: ' + st.name, 'music');
+  currentQueue = []; currentIndex = -1;
+}
+Object.keys(RADIO_STATIONS).forEach(k => {
+  const b = document.createElement('button'); b.className = 'radio-btn'; b.textContent = RADIO_STATIONS[k].name;
+  b.onclick = () => playRadio(k); radioRow.appendChild(b);
+});
+
+function stopMusic() {
+  audioPlayer.pause(); audioPlayer.src = '';
+  if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
+  rutubeFrame.src = 'about:blank';
+  audioWrap.style.display = 'none'; rutubeWrap.style.display = 'none';
+  isPlayingMusic = false; isRutubeMode = false; reactor.classList.remove('playing');
+  currentQueue = []; currentIndex = -1;
+  trackTitle.textContent = 'Ничего не воспроизводится'; nowPlayingEl.classList.remove('show');
+  setStatus(listening ? 'слушаю...' : 'ожидание'); addLog('■ Остановлено', 'sys');
+}
+
+$('closeMusic').onclick = () => musicPanel.classList.remove('open');
+musicPanel.onclick = e => { if (e.target === musicPanel) musicPanel.classList.remove('open'); };
+
+// === ЗАМЕТКИ ===
+function renderNotes() {
+  notesList.innerHTML = '';
+  if (notes.length === 0) { notesList.innerHTML = '<p style="text-align:center;opacity:0.5;">Пусто</p>'; return; }
+  notes.forEach((n, i) => {
+    const d = document.createElement('div'); d.className = 'list-item';
+    const span = document.createElement('span'); span.textContent = n;
+    const btn = document.createElement('button'); btn.textContent = '✕';
+    btn.onclick = () => { notes.splice(i,1); localStorage.setItem('tovarish_notes', JSON.stringify(notes)); renderNotes(); };
+    d.appendChild(span); d.appendChild(btn);
+    notesList.appendChild(d);
+  });
+}
+function addNote(text) { if (!text.trim()) return; notes.push(text.trim()); localStorage.setItem('tovarish_notes', JSON.stringify(notes)); renderNotes(); }
+$('addNote').onclick = () => { addNote(noteInput.value); noteInput.value = ''; };
+noteInput.onkeydown = e => { if (e.key === 'Enter') { addNote(noteInput.value); noteInput.value = ''; } };
+$('notesBtn').onclick = () => { renderNotes(); notesModal.classList.add('open'); };
+$('closeNotes').onclick = () => notesModal.classList.remove('open');
+
+$('settingsBtn').onclick = () => settingsModal.classList.add('open');
+$('closeSettings').onclick = () => settingsModal.classList.remove('open');
+$('closeHelp').onclick = () => helpModal.classList.remove('open');
+[settingsModal, helpModal, notesModal].forEach(m => m.onclick = e => { if (e.target === m) m.classList.remove('open'); });
+
+document.querySelectorAll('.quick-btn').forEach(btn => {
+  btn.onclick = () => {
+    const a = btn.dataset.action;
+    if (a === 'library') { libraryModal.classList.add('open'); renderLibrary(); speak('Фонотека открыта.'); }
+    else if (a === 'radio') { musicPanel.classList.add('open'); speak('Музыкальный отдел.'); }
+    else if (a === 'rutube') { musicPanel.classList.add('open'); rutubeSearchInput.focus(); speak('Раздел RUTUBE.'); }
+    else if (a === 'notes') { renderNotes(); notesModal.classList.add('open'); speak('Заметки открыты.'); }
+    else if (a === 'games') { speak('Угадай число, монетка или пошути.'); }
+    else if (a === 'report') { giveReport(); }
+  };
+});
+
+function giveReport() {
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  if (navigator.getBattery) {
+    navigator.getBattery().then(b => {
+      speak(`Сводка на ${t}. Заряд ${Math.round(b.level*100)}%. Связь ${navigator.onLine ? 'есть' : 'нет'}. Треков в фонотеке: ${localTracks.length}.`);
+    });
+  } else speak(`Сводка на ${t}. Связь ${navigator.onLine ? 'есть' : 'нет'}.`);
+}
+function startAlert() {
+  alertOverlay.classList.add('on'); playAlertSiren();
+  setStatus('⚠️ ТРЕВОГА ⚠️', 'listening'); vibrate([500,200,500,200,500]);
+  speak('Внимание всем! Тревога!');
+}
+function stopAlert() { alertOverlay.classList.remove('on'); setStatus('ожидание'); speak('Отбой тревоги.'); }
+function showPoster() {
+  const slogans = ['МИР! ТРУД! МАЙ!', 'БЕРЕГИТЕ ЛЕС!', 'ВЫПОЛНИМ ПЛАН!', 'СЛАВА ТРУДУ!', 'ВСЁ ДЛЯ ЧЕЛОВЕКА!'];
+  const s = slogans[Math.floor(Math.random() * slogans.length)];
+  posterToast.textContent = s; posterToast.classList.add('show');
+  setTimeout(() => posterToast.classList.remove('show'), 3000);
+  speak(s);
+}
+function showHonorBoard() {
+  const entries = Object.entries(playCounts).sort((a,b) => b[1] - a[1]).slice(0, 3);
+  if (entries.length === 0) { speak('Доска почёта пуста.'); return; }
+  speak('Доска почёта: ' + entries.map((e,i) => `${i+1}. ${e[0]} — ${e[1]} раз`).join('. '));
+}
+function showPartyCard() {
+  const name = localStorage.getItem('tovarish_name') || 'Товарищ';
+  speak(`Партбилет: ${name}. Принят в товарищи.`);
+}
+
+function initRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { addLog('⚠️ Нужен Chrome/Edge', 'sys'); return; }
+  recognition = new SR(); recognition.lang = LANG; recognition.continuous = true; recognition.interimResults = false;
+  recognition.onresult = e => {
+    const l = e.results[e.results.length-1]; if (!l.isFinal) return;
+    const t = l[0].transcript.trim().toLowerCase();
+    addLog('Вы: ' + t, 'user'); playClick(); handleCommand(t);
+  };
+  recognition.onerror = e => { if (e.error === 'not-allowed') { addLog('⚠️ Микрофон недоступен', 'sys'); stopListening(); } };
+  recognition.onend = () => {
+    if (listening) { try { recognition.start(); } catch(e){} }
+    else { setStatus(isPlayingMusic ? '♪ музыка ♪' : 'ожидание', isPlayingMusic ? 'playing' : ''); reactor.classList.remove('listening'); micBtn.classList.remove('active'); micBtn.textContent = '🎤'; }
+  };
+}
+function startListening() {
+  if (!recognition) initRecognition(); if (!recognition) return;
+  listening = true; try { recognition.start(); } catch(e){}
+  reactor.classList.add('listening'); micBtn.classList.add('active'); micBtn.textContent = '⏹';
+  setStatus('слушаю...','listening'); vibrate([50,30,50]); speak('Слушаю, товарищ.');
+}
+function stopListening() {
+  listening = false; if (recognition) try { recognition.stop(); } catch(e){}
+  reactor.classList.remove('listening'); micBtn.classList.remove('active'); micBtn.textContent = '🎤';
+  setStatus(isPlayingMusic ? '♪ музыка ♪' : 'ожидание', isPlayingMusic ? 'playing' : '');
+}
+micBtn.onclick = () => listening ? stopListening() : startListening();
+
+function handleCommand(text) {
+  const t = text.replace(/[.,!?]/g,'').trim();
+
+  if (guessTarget !== null) {
+    const n = parseInt(t.replace(/\D/g,'')); if (!isNaN(n)) {
+      if (n === guessTarget) { speak('Правильно!'); guessTarget = null; }
+      else speak(n < guessTarget ? 'Больше.' : 'Меньше.');
+      return;
+    }
+  }
+
+  if (/(помощь|команды|что ты умеешь)/.test(t)) { helpModal.classList.add('open'); speak('Список команд открыт.'); return; }
+  if (/(сводка|обстановка|доложи)/.test(t)) { giveReport(); return; }
+  if (/(тревога)/.test(t)) { startAlert(); return; }
+  if (/(отбой)/.test(t)) { stopAlert(); return; }
+  if (/(плакат|агит)/.test(t)) { showPoster(); return; }
+  if (/(доска почёта|доска почета)/.test(t)) { showHonorBoard(); return; }
+  if (/(партбилет)/.test(t)) { showPartyCard(); return; }
+  if (/(тишина|спутник)/.test(t)) { isSilentMode = true; speak('Режим тишины.'); return; }
+  if (/(отмена тишины)/.test(t)) { isSilentMode = false; speak('Режим тишины снят.'); return; }
+  if (/(мудрость|пословица|поговорка)/.test(t)) {
+    const p = ['Без труда не выловишь и рыбку из пруда.','Семь раз отмерь — один раз отрежь.','Тише едешь — дальше будешь.','Один в поле не воин.'];
+    speak(p[Math.floor(Math.random()*p.length)]); return;
+  }
+  if (/(проверка связи|как слышно|приём)/.test(t)) {
+    const p = ['Связь устойчивая, товарищ.','Приём, приём, как слышно?','Слышу вас хорошо.','Канал чистый.'];
+    speak(p[Math.floor(Math.random()*p.length)]); return;
+  }
+
+  if (/(открой фонотеку|фонотека)/.test(t)) { libraryModal.classList.add('open'); renderLibrary(); speak('Фонотека открыта.'); return; }
+  if (/(следующий|дальше)/.test(t)) { playNext(); return; }
+  if (/(предыдущий|назад)/.test(t)) { playPrev(); return; }
+  if (/(перемешай|шафл)/.test(t)) { shufflePlay(); speak('Перемешано.'); return; }
+  if (/(повтори|ещё раз)/.test(t)) { if (currentQueue.length) playCurrent(); else speak('Нечего повторять.'); return; }
+
+  if (/(отмени таймер|стоп таймер)/.test(t)) {
+    if (timerId) { clearTimeout(timerId); timerId = null; speak('Таймер отменён.'); }
+    else speak('Активного таймера нет.'); return;
+  }
+
+  let m = t.match(/(?:найди|включи|поищи|запусти)\s+(?:на\s+)?рутубе?\s+(.+)/);
+  if (m) { searchRutube(m[1].trim()); return; }
+  if (/^рутуб\s+(.+)/.test(t)) { searchRutube(t.replace(/^рутуб\s+/, '').trim()); return; }
+  const rutubeId = extractRutubeId(t);
+  if (rutubeId) { embedRutubeVideo(rutubeId); speak('Встраиваю видео RUTUBE.'); return; }
+
+  if (/(радио ссср|советское радио)/.test(t)) { playRadio('радио ссср'); speak('Радио СССР.'); return; }
+  if (/(ссср 30-50)/.test(t)) { playRadio('ссср 30-50'); speak('СССР 30-50.'); return; }
+  if (/(ссср 50-70)/.test(t)) { playRadio('ссср 50-70'); speak('СССР 50-70.'); return; }
+  if (/(советская эстрада|советскую эстраду)/.test(t)) { playRadio('советская эстрада'); speak('Советская эстрада.'); return; }
+  if (/(маяк|маяк фм)/.test(t)) { playRadio('маяк'); speak('Радио Маяк.'); return; }
+  if (/(радио россии)/.test(t)) { playRadio('радио россии'); speak('Радио России.'); return; }
+  if (/(dfm|дфм)/.test(t)) { playRadio('dfm'); speak('DFM.'); return; }
+  if (/(ретро фм|ретро)/.test(t)) { playRadio('ретро фм'); speak('Ретро FM.'); return; }
+  if (/(ретро 80|восьмидесятые)/.test(t)) { playRadio('ретро 80'); speak('Ретро 80-х.'); return; }
+  if (/(ретро 70|семидесятые)/.test(t)) { playRadio('ретро 70'); speak('Ретро 70-х.'); return; }
+  if (/(родные песни)/.test(t)) { playRadio('родные песни'); speak('Родные Песни.'); return; }
+  m = t.match(/(?:включи|вруби|поставь)\s+радио\s+(.+)/);
+  if (m) { playRadio(m[1].trim()); speak('Включаю радио.'); return; }
+  if (/(europa|европа)/.test(t)) { playRadio('europa plus'); speak('Europa Plus.'); return; }
+  if (/(record|рекорд)/.test(t)) { playRadio('record'); speak('Radio Record.'); return; }
+  if (/(максимум|maximum)/.test(t)) { playRadio('maximum'); speak('Radio Maximum.'); return; }
+
+  m = t.match(/таймер\s+на\s+(\d+)\s*(минут|секунд|час)/);
+  if (m) {
+    if (timerId) clearTimeout(timerId);
+    const ms = parseInt(m[1]) * (m[2].startsWith('час') ? 3600000 : m[2].startsWith('секунд') ? 1000 : 60000);
+    timerId = setTimeout(() => { speak('Товарищ, время вышло!'); vibrate([200,100,200,100,200]); timerId = null; }, ms);
+    speak(`Таймер на ${m[1]} ${m[2]}.`); return;
+  }
+  m = t.match(/будильник\s+на\s+(\d{1,2})[:.](\d{2})/);
+  if (m) {
+    const target = new Date(); target.setHours(parseInt(m[1]), parseInt(m[2]), 0, 0);
+    if (target < new Date()) target.setDate(target.getDate()+1);
+    setTimeout(() => { speak('Подъём, товарищ!'); vibrate([500,200,500,200,500]); }, target - new Date());
+    speak(`Будильник на ${m[1]}:${m[2]}.`); return;
+  }
+
+  m = t.match(/(?:запиши|заметка|напомни)\s*:?\s*(.+)/);
+  if (m) { addNote(m[1]); speak('Записано.'); return; }
+  if (/(что в заметках|мои заметки|покажи заметки)/.test(t)) {
+    if (notes.length === 0) { speak('Заметок нет.'); return; }
+    speak('В заметках: ' + notes.join('. ')); renderNotes(); notesModal.classList.add('open'); return;
+  }
+  if (/(очисти заметки|удали заметки)/.test(t)) {
+    notes = []; localStorage.setItem('tovarish_notes','[]'); renderNotes(); speak('Заметки очищены.'); return;
+  }
+
+  if (/(стоп музыка|останови музыку|выключи музыку|пауза)/.test(t)) { stopMusic(); speak('Остановлено.'); return; }
+  if (/(закрой плеер)/.test(t)) { musicPanel.classList.remove('open'); speak('Панель закрыта.'); return; }
+  if (/(открой плеер|открой музыку)/.test(t)) { musicPanel.classList.add('open'); speak('Музыкальный отдел открыт.'); return; }
+
+  m = t.match(/(?:включи|включить|вруби|поставь|поставить|сыграй|запусти|найди музыку|поиск музыки|найди песню|найди трек)\s+(.+)/);
+  if (m) {
+    let q = m[1].trim().replace(/\b(музыку|песню|трек|композицию|пожалуйста)\b/g,'').trim();
+    if (!q) { speak('Что включить, товарищ?'); return; }
+    if (localTracks.length === 0) {
+      speak('Фонотека пуста. Загрузите музыку.');
+      libraryModal.classList.add('open'); renderLibrary(); return;
+    }
+    const res = searchLocalTracks(q);
+    if (res.length > 0) {
+      currentQueue = res; currentIndex = 0; playCurrent();
+      speak('Включаю: ' + res[0].title + '.');
+    } else {
+      speak('В фонотеке не нашёл «' + q + '». Скажите «найди на рутубе».');
+    }
+    return;
+  }
+
+  m = t.match(/(?:позвони|набери)\s+(.+)/);
+  if (m) { const num = m[1].replace(/\D/g,''); if (num) { speak('Звоню.'); window.location.href = 'tel:' + num; } else speak('Номер не распознан.'); return; }
+  m = t.match(/(?:напиши|отправь)\s+(?:смс|сообщение)/);
+  if (m) { speak('Открываю SMS.'); window.location.href = 'sms:'; return; }
+
+  if (/(заряд|батарея|аккумулятор|сколько заряда)/.test(t)) {
+    if (navigator.getBattery) navigator.getBattery().then(b => speak(`Заряд ${Math.round(b.level*100)} процентов.`));
+    else speak('Не могу получить заряд.'); return;
+  }
+  if (/(вибрация|вибрируй)/.test(t)) { vibrate([200,100,200]); speak('Вибрация.'); return; }
+
+  if (/(время|который час)/.test(t)) { const n=new Date(); speak(`Сейчас ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`); return; }
+  if (/(дата|какое сегодня число|какой сегодня день)/.test(t)) {
+    const d=new Date(); const days=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+    speak(`Сегодня ${days[d.getDay()]}, ${d.getDate()} число.`); return;
+  }
+
+  if (/погода/.test(t)) { speak('Открываю погоду.'); setTimeout(()=>window.open('https://yandex.ru/pogoda','_blank'),800); return; }
+  m = t.match(/(?:найди|погугли|поищи|загугли)\s+(.+)/);
+  if (m) { speak('Ищу '+m[1]); setTimeout(()=>window.open('https://www.google.com/search?q='+encodeURIComponent(m[1]),'_blank'),800); return; }
+  m = t.match(/(?:открой|запусти)\s+(.+)/);
+  if (m) {
+    const site=m[1].replace(/\s+/g,'');
+    const map2={'ютуб':'youtube.com','вк':'vk.com','телеграм':'web.telegram.org','яндекс':'ya.ru','google':'google.com','карты':'yandex.ru/maps','почта':'mail.ru','рутуб':'rutube.ru'};
+    let url=map2[site]||(site.includes('.')?site:site+'.ru');
+    if(!url.startsWith('http'))url='https://'+url;
+    speak('Открываю '+m[1]); setTimeout(()=>window.open(url,'_blank'),800); return;
+  }
+
+  m = t.match(/(?:посчитай|сколько будет)\s+(.+)/);
+  if (m) {
+    try {
+      const expr=m[1].replace(/плюс/g,'+').replace(/минус/g,'-').replace(/умножить на/g,'*').replace(/разделить на/g,'/').replace(/[^0-9+\-*/(). ]/g,'');
+      speak(`Ответ: ${Function('"use strict";return ('+expr+')')()}`);
+    } catch(e){ speak('Не смог посчитать.'); }
+    return;
+  }
+
+  if (/(угадай число|игра число)/.test(t)) { guessTarget = Math.floor(Math.random()*100)+1; speak('Я загадал число от 1 до 100. Назовите число.'); return; }
+  if (/монетк|орёл или решка|орел или решка/.test(t)) { speak(Math.random()<0.5?'Орёл':'Решка'); return; }
+  if (/шутк|пошути|анекдот/.test(t)) {
+    const j=['Программист ставит на ночь два стакана: один с водой — если захочет пить, второй пустой — если не захочет.','Почему программисты путают Хэллоуин и Рождество? Потому что OCT 31 равно DEC 25.'];
+    speak(j[Math.floor(Math.random()*j.length)]); return;
+  }
+  if (/(кто ты|как тебя зовут|твоё имя)/.test(t)) { speak('Я Товарищ — ваш персональный ассистент.'); return; }
+  if (/(стоп|остановись|хватит|замолчи)/.test(t)) { synth.cancel(); stopListening(); return; }
+  if (/(привет|здравствуй|хай|доброе утро|добрый день|добрый вечер)/.test(t)) { speak('Здравствуйте, товарищ.'); return; }
+
+  speak('Не понял, товарищ. Повторите или скажите «помощь».');
+}
+
+audioPlayer.addEventListener('play', () => { if (!isRutubeMode) { isPlayingMusic=true; reactor.classList.add('playing'); setStatus('♪ музыка ♪','playing'); } });
+audioPlayer.addEventListener('pause', () => { if (!audioPlayer.ended && !isRutubeMode) { reactor.classList.remove('playing'); setStatus('ожидание'); } });
+audioPlayer.addEventListener('ended', () => {
+  if (isRutubeMode) return;
+  if (currentQueue.length > 0 && currentIndex + 1 < currentQueue.length) { currentIndex++; playCurrent(); }
+  else { isPlayingMusic=false; reactor.classList.remove('playing'); trackTitle.textContent='Завершено'; setStatus('ожидание'); }
+});
+
+playStartupTone();
+renderLibrary();
+setInterval(() => { if (isSilentMode) playMetronomeTick(); }, 1000);
+</script>
+</body>
+</html>
