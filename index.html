@@ -437,10 +437,15 @@ async function askAI(text) {
   try {
     aiHistory.push({ role: 'user', content: text });
     if (aiHistory.length > 7) aiHistory = [aiHistory[0], ...aiHistory.slice(-6)];
-        const res = await fetch('https://blue-block-42ec.denisvadimovic82.workers.dev', {
+            const res = await fetch('https://text.pollinations.ai/openai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'deepseek-r1-distill-llama-70b', messages: aiHistory, max_tokens: 150, temperature: 0.7 })
+      body: JSON.stringify({ 
+        model: 'deepseek', // <-- Используем DeepSeek через Pollinations
+        messages: aiHistory, 
+        max_tokens: 150, 
+        temperature: 0.7 
+      })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
